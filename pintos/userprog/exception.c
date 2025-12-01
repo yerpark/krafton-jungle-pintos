@@ -145,7 +145,7 @@ page_fault (struct intr_frame *f) {
 	if (vm_try_handle_fault (f, fault_addr, user, write, not_present))
 		return;
 #endif
-
+	/* 일단 사용해야 함 */
 	if(!user) {
 		f->rip = f->R.rax;
 		f->R.rax = -1;
