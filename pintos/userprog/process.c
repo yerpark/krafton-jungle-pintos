@@ -645,6 +645,10 @@ static bool lazy_load_segment(struct page* page, void* aux) {
     off_t pos = af->page_pos;
     size_t page_read_bytes = af->page_read_bytes;
     size_t page_zero_bytes = af->page_zero_bytes;
+    
+    /* 선제적으로 free 처리(aux는 VM_ANON -> 로드 이후 더 이상 쓸 일이 없음) */
+    free(aux);
+
     void *kpage = page->frame->kva;
 
     /* file_seek 후 file_read 시 그 사이 race condtion 발생 가능 -> read_at으로 변경*/
@@ -653,11 +657,10 @@ static bool lazy_load_segment(struct page* page, void* aux) {
     lock_release(&file_lock);
 
     /* 해제의 책임은 상위 함수(vm_do_claim_page)로 위임하기 */
-    if (bytes_read != (off_t)page_read_bytes){
+    if (bytes_read != (off_t)page_read_bytes)
         return false;
-    }
+
     memset(kpage + page_read_bytes, 0, page_zero_bytes);
-    free(aux);
     return true;
 }
 
