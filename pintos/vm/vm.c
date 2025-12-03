@@ -57,16 +57,11 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 	struct supplemental_page_table *spt = &thread_current ()->spt;
 	struct page *page = NULL;
 
-	/* Check whether the upage is already occupied or not. */
 	if (spt_find_page (spt, upage) == NULL) {
-		/* TODO: Create the page, fetch the initialier according to the VM type,
-		 * TODO: and then create "uninit" page struct by calling uninit_new. You
-		 * TODO: should modify the field after calling the uninit_new. */
 		page = (struct page *)malloc(sizeof(struct page));
 		if(page == NULL) goto err;
 
-		switch (VM_TYPE(type))
-		{
+		switch (VM_TYPE(type)){
 		case VM_ANON:
 			uninit_new(page, upage, init, type, aux, anon_initializer);
 			break;
@@ -76,8 +71,8 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		default:
 			goto err;
 		}
+
 		page->writable = writable;
-		/* TODO: Insert the page into the spt. */
 		if(!(spt_insert_page(spt, page))){
 			goto err;
 		}
@@ -189,16 +184,15 @@ vm_handle_wp (struct page *page UNUSED) {
 bool
 vm_try_handle_fault (struct intr_frame *f, void *addr, bool user, 
 	bool write, bool not_present) {
-	struct supplemental_page_table *spt = &thread_current ()->spt;
+	struct supplemental_page_table *spt = &thread_current()->spt;
 	struct page *page = NULL;
-	/* TODO: Validate the fault */
-	/* TODO: Your code goes here */
+
 	if(is_kernel_vaddr(addr) || addr == NULL) return false;
 
 	page = spt_find_page(spt, addr);
 	if(page == NULL) return false;
 
-	if(write && !page -> writable){
+	if(write && !(page->writable)){
 		return false;
 	}
 
@@ -236,14 +230,11 @@ static bool
 vm_do_claim_page (struct page *page) {
 	struct frame *frame = vm_get_frame ();
 	struct thread *t = thread_current();
-	if(frame == NULL || page == NULL || !is_user_vaddr(page -> va)) return false;
+	if(frame == NULL || page == NULL) return false;
 
 	/* Set links */
 	frame->page = page;
 	page->frame = frame;
-
-	/* TODO: Insert page table entry to map page's VA to frame's PA. */
-	bool succ = false;
 
 	if(!pml4_set_page(t->pml4, page->va, frame->kva, page->writable)){
 		vm_dealloc_frame(frame);
@@ -256,6 +247,7 @@ vm_do_claim_page (struct page *page) {
 		vm_dealloc_frame(frame);
 		return false; 
 	}
+
 	return true;
 }
 
@@ -270,8 +262,8 @@ supplemental_page_table_init (struct supplemental_page_table *spt) {
 
 /* Copy supplemental page table from src to dst */
 bool
-supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
-		struct supplemental_page_table *src UNUSED) {
+supplemental_page_table_copy (struct supplemental_page_table *dst,
+		struct supplemental_page_table *src) {
 }
 
 /* Free the resource hold by the supplemental page table */
