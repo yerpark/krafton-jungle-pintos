@@ -62,14 +62,14 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		if(page == NULL) goto err;
 
 		switch (VM_TYPE(type)){
-		case VM_ANON:
-			uninit_new(page, upage, init, type, aux, anon_initializer);
-			break;
-		case VM_FILE:
-			uninit_new(page, upage, init, type, aux, file_backed_initializer);
-			break;
-		default:
-			goto err;
+			case VM_ANON:
+				uninit_new(page, upage, init, type, aux, anon_initializer);
+				break;
+			case VM_FILE:
+				uninit_new(page, upage, init, type, aux, file_backed_initializer);
+				break;
+			default:
+				goto err;
 		}
 
 		page->writable = writable;
@@ -105,7 +105,6 @@ bool
 spt_insert_page (struct supplemental_page_table *spt,
 		struct page *page) {
 	bool succ = false;
-	/* TODO: Fill this function. */
 	/* 어떤 상황을 vaildation 해야 할까?*/
 	/* 주어진 보충 페이지 테이블에 가상 주소가 존재하는지 확인 -> 즉, 중복 체크*/
 	if(page == NULL || spt == NULL) return succ;

@@ -691,9 +691,8 @@ static bool load_segment(struct file* file, off_t ofs, uint8_t* upage, uint32_t 
          * and zero the final PAGE_ZERO_BYTES bytes. */
         size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
         size_t page_zero_bytes = PGSIZE - page_read_bytes;
-
-        /* TODO: Set up aux to pass information to the lazy_load_segment. */
         struct aux_file *aux_file = (struct aux_file *)malloc(sizeof(struct aux_file));
+
         /* TODO : malloc 실패 시 >> 이전 페이지까지의 malloc을 어떻게 처리할까? */
         if (aux_file == NULL) return false;
         aux_file->elf_file = file;

@@ -66,5 +66,5 @@ uninit_destroy (struct page *page) {
 	struct uninit_page *uninit UNUSED = &page->uninit;
 	/* TODO: Fill this function.
 	 * TODO: If you don't have anything to do, just return. */
-	/*TODO : lazy_loading 안했으면 aux 제거하기*/
+	/* TODO : lazy_loading 안했으면 aux 제거하기 */
 }
