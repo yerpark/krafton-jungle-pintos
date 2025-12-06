@@ -45,7 +45,7 @@ static struct frame *vm_evict_frame (void);
 /* Hash table Helpers*/
 static uint64_t page_hash(const struct hash_elem *p_, void *aux UNUSED);
 static bool page_less(const struct hash_elem *a_, const struct hash_elem *b_, void *aux UNUSED);
-static void page_destroy(struct hash_elem *e, void *aux UNUSED);
+void page_destroy(struct hash_elem *e, void *aux UNUSED);
 
 /* Create the pending page object with initializer. If you want to create a
  * page, do not create it directly and make it through this function or
@@ -309,10 +309,10 @@ supplemental_page_table_copy (struct supplemental_page_table *dst,
 
 /* Free the resource hold by the supplemental page table */
 void
-supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
+supplemental_page_table_kill (struct supplemental_page_table *spt) {
 	/* TODO: Destroy all the supplemental_page_table hold by thread and
 	 * TODO: writeback all the modified contents to the storage. */
-	// hash_destroy(&(spt->hs_table), page_destroy);
+	hash_destroy(&(spt->hs_table), page_destroy);
 }
 
 
@@ -330,7 +330,7 @@ page_less(const struct hash_elem *a_, const struct hash_elem *b_, void *aux UNUS
 	return a->va < b->va; 
 }
 
-static void
+void
 page_destroy(struct hash_elem *e, void *aux UNUSED) {
 	struct page		*cur;
 

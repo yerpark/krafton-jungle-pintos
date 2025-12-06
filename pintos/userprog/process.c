@@ -208,6 +208,7 @@ int process_exec(void* f_name) {
 
     /* We first kill the current context */
     process_cleanup();
+    supplemental_page_table_init(&(thread_current()->spt));
 
     /* And then load the binary */
     success = load(file_name, argc, argv, &_if);
@@ -257,6 +258,8 @@ void process_exit(void) {
     if (cur->pml4 == NULL) return;
     printf("%s: exit(%d)\n", cur->name, cur->my_entry->exit_status);
     if (cur->current_file) {
+        printf("[process_exit] before file_allow_write: %d\n",
+			 get_file_inode_deny_write(cur->current_file));
         file_allow_write(cur->current_file);
         lock_acquire(&file_lock);
         file_close(cur->current_file);
@@ -450,6 +453,7 @@ static bool load(const char* file_name, int argc, char** argv, struct intr_frame
 
     /* Set up stack. */
     if (!setup_stack(if_)) goto done;
+
     build_user_stack(if_, argc, argv);
     /* Start address. */
     if_->rip = ehdr.e_entry;

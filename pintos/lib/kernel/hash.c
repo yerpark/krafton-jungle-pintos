@@ -6,6 +6,7 @@
    See hash.h for basic information. */
 
 #include "hash.h"
+#include "vm/vm.h"
 #include "../debug.h"
 #include "threads/malloc.h"
 

@@ -11,6 +11,9 @@
 #include "vm/vm.h"
 #include <stdbool.h>
 #include "vm/uninit.h"
+#include "filesys/file.h"
+#include "filesys/filesys.h"
+#include "userprog/syscall.h"
 
 static bool uninit_initialize (struct page *page, void *kva);
 static void uninit_destroy (struct page *page);
@@ -67,6 +70,14 @@ uninit_destroy (struct page *page) {
 	 * TODO: If you don't have anything to do, just return. */
 	/* TODO : lazy_loading 안했으면 aux 제거하기 */
 
+	if (page->uninit.aux)
+	{
+		// 만약에 uninit 여러개의 타입이 있으면 ? 
+			// 오직 uninit page를 위해 file을 열어준 경우 등..
+			// 위와 같은 경우에는 file_close 등 따로 해야하지 않을까
+		free (page->uninit.aux);
+		page->uninit.aux = NULL;
+	}
 	
 }
 
@@ -79,10 +90,16 @@ uninit_aux_load_copy(struct supplemental_page_table *dst, struct page *src_page)
 
 	if (!current_file_copy)
 	{
+		lock_acquire(&file_lock);
+		printf("[uninit_aux_load_copy] before file_duplicate: %d\n",
+			 get_file_inode_deny_write(((struct uninit_aux *)(src_page->uninit.aux))->aux_load.elf_file));
 		current_file_copy = file_duplicate(((struct uninit_aux *)(src_page->uninit.aux))->aux_load.elf_file);
 		if (!current_file_copy)
 			return false;
+		lock_release(&file_lock);
 		thread_current()->current_file = current_file_copy;
+		printf("[uninit_aux_load_copy] after file_duplicate: %d\n",
+			 get_file_inode_deny_write(((struct uninit_aux *)(src_page->uninit.aux))->aux_load.elf_file));
 	}
 
 	aux = (struct uninit_aux *)calloc(1, sizeof(struct uninit_aux));
