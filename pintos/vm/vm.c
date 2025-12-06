@@ -5,6 +5,8 @@
 #include "vm/inspect.h"
 #include "threads/vaddr.h"
 #include <hash.h>
+#include <stdbool.h>
+#include <string.h>
 #include "threads/mmu.h"
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
@@ -234,7 +236,7 @@ vm_do_claim_page (struct page *page) {
 		vm_dealloc_frame(frame);
 		return false;
 	}
-
+	
 	if(false == swap_in(page, frame ->kva)){
 		pml4_clear_page(t->pml4, page->va);
 		vm_dealloc_frame(frame);
@@ -253,6 +255,24 @@ supplemental_page_table_init (struct supplemental_page_table *spt) {
 		PANIC("spt initialize failed");
 }
 
+bool
+anon_copy(struct supplemental_page_table *dst, struct page *src_page) {
+	struct page	*dst_page = NULL;
+	
+	vm_alloc_page(src_page->operations->type, src_page->va, src_page->writable);
+
+	dst_page = spt_find_page(dst, src_page->va);
+	if (!dst_page)
+		return false;
+
+	if (src_page->frame)
+	{
+		vm_do_claim_page(dst_page);
+		memcpy(dst_page->frame->kva, src_page->frame->kva, PGSIZE);
+	}
+	return true;
+}
+
 /* Copy supplemental page table from src to dst */
 bool
 supplemental_page_table_copy (struct supplemental_page_table *dst,
@@ -260,38 +280,31 @@ supplemental_page_table_copy (struct supplemental_page_table *dst,
 	struct hash_iterator	src_i;
 	struct hash_elem		*src_e;
 	struct page				*src_page;
-	struct page				*dst_page;
 
 	hash_first(&src_i, &(src->hs_table));
 	while (hash_next(&src_i))
 	{
 		src_e = hash_cur(&src_i);
 		src_page = hash_entry(src_e, struct page, hs_elem);
-		dst_page = (struct page *)malloc(sizeof(struct page));
-		if (!dst_page) goto err;
-
-		memcpy(dst_page, src_page, sizeof(struct page));
 
 		switch (src_page->operations->type) {
 			case VM_UNINIT:
-				if (false == uninit_copy(dst_page)) goto err;
+				if (false == uninit_copy(dst, src_page)) 
+				{
+					return false;
+				}
 				break ;
 			case VM_ANON:
-				if (false == anon_copy(dst_page)) goto err;
-				if (false == vm_do_claim_page(dst_page)) goto err;
-				memcpy(dst_page->frame->kva, src_page->frame->kva, PGSIZE);
+				if (false == anon_copy(dst, src_page))
+				{
+					return false;
+				}
 				break ;
 			case VM_FILE:
 				break ;
 		}
-
-		hash_insert(&(dst->hs_table), &(dst_page->hs_elem));
 	}
 	return true;
-
-	err:
-		supplemental_page_table_kill(dst);
-		return false;
 }
 
 /* Free the resource hold by the supplemental page table */

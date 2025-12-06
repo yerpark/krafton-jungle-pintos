@@ -9,6 +9,7 @@
  * */
 
 #include "vm/vm.h"
+#include <stdbool.h>
 #include "vm/uninit.h"
 
 static bool uninit_initialize (struct page *page, void *kva);
@@ -69,64 +70,67 @@ uninit_destroy (struct page *page) {
 	
 }
 
-bool
-uninit_aux_load_copy(struct page *dst_page) {
-	struct uninit_page		uninit;
-	struct uninit_aux		*aux;
-	struct uninit_aux_load	*aux_load;
+bool 
+uninit_aux_load_copy(struct supplemental_page_table *dst, struct page *src_page) {
 	struct file				*current_file_copy = NULL;
+	struct uninit_aux		*aux = NULL;
 
-	uninit = dst_page->uninit;
-	aux = (struct uninit_aux *)uninit.aux;
 	current_file_copy = thread_current()->current_file;
 
 	if (!current_file_copy)
 	{
-		current_file_copy = file_duplicate(aux->aux_load.elf_file);
+		current_file_copy = file_duplicate(((struct uninit_aux *)(src_page->uninit.aux))->aux_load.elf_file);
 		if (!current_file_copy)
 			return false;
-		aux->aux_load.elf_file = current_file_copy;
 		thread_current()->current_file = current_file_copy;
-		file_deny_write(current_file_copy);
 	}
-	
+
+	aux = (struct uninit_aux *)calloc(1, sizeof(struct uninit_aux));
+	if (!aux) return false;
+
+	memcpy(aux, src_page->uninit.aux, sizeof(struct uninit_aux));
 	aux->aux_load.elf_file = current_file_copy;
 
+	if (!vm_alloc_page_with_initializer(
+		src_page->uninit.type, src_page->va, src_page->writable,
+		src_page->uninit.init, aux
+	)) return false;
+
 	return true;
 }
 
-bool
-uninit_aux_file_copy(struct page *dst_page) {
+bool 
+uninit_aux_file_copy(struct supplemental_page_table *dst, struct page *src_page) {
 	return true;
 }
 
-bool
-uninit_aux_anon_copy(struct page *dst_page) {
+bool 
+uninit_aux_anon_copy(struct supplemental_page_table *dst, struct page *src_page) {
+	struct page	*dst_page;
+
+	if (!vm_alloc_page_with_initializer(src_page->uninit.type, src_page->va, src_page->writable, src_page->uninit.init, src_page->uninit.aux))
+		return false;
+
 	return true;
 }
 
-bool
-uninit_copy(struct page *dst_page) {
-	struct uninit_page		uninit;
+bool  uninit_copy(struct supplemental_page_table *dst, struct page *src_page) {
 	enum uninit_aux_type	aux_type;
-	struct uninit_aux		*aux;
 
-	if (!dst_page) return false;
+	if (!dst || !src_page) return false;  
 
-	uninit = dst_page->uninit;
-	aux = (struct uninit_aux *)uninit.aux;
-	aux_type = aux->type;
+	aux_type = ((struct uninit_aux *)(src_page->uninit.aux))->type;
 
 	switch (aux_type)
 	{
 		case UNINIT_AUX_LOAD:
-			if (false == uninit_aux_load_copy(dst_page)) return false;
+			if (false == uninit_aux_load_copy(dst, src_page)) return false;
 			break ;
 		case UNINIT_AUX_FILE:
-			if (false == uninit_aux_file_copy(dst_page)) return false;
+			if (false == uninit_aux_file_copy(dst, src_page)) return false;
 			break ;
 		case UNINIT_AUX_ANON:
-			if (false == uninit_aux_anon_copy(dst_page)) return false;
+			if (false == uninit_aux_anon_copy(dst, src_page)) return false;
 			break ;	
 	}
 
