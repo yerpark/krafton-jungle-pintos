@@ -9,7 +9,11 @@
  * */
 
 #include "vm/vm.h"
+#include <stdbool.h>
 #include "vm/uninit.h"
+#include "filesys/file.h"
+#include "filesys/filesys.h"
+#include "userprog/syscall.h"
 
 static bool uninit_initialize (struct page *page, void *kva);
 static void uninit_destroy (struct page *page);
@@ -51,8 +55,6 @@ uninit_initialize (struct page *page, void *kva) {
 	vm_initializer *init = uninit->init;
 	void *aux = uninit->aux;
 
-	/* TODO: You may need to fix this function. */
-	/* uninit 정보 백업????? */
 	return uninit->page_initializer (page, uninit->type, kva) &&
 		(init ? init (page, aux) : true);
 }
@@ -63,8 +65,75 @@ uninit_initialize (struct page *page, void *kva) {
  * PAGE will be freed by the caller. */
 static void
 uninit_destroy (struct page *page) {
-	struct uninit_page *uninit UNUSED = &page->uninit;
+	struct uninit_page *uninit = &page->uninit;
 	/* TODO: Fill this function.
 	 * TODO: If you don't have anything to do, just return. */
 	/* TODO : lazy_loading 안했으면 aux 제거하기 */
+
+	if (page->uninit.aux)
+	{
+		free (page->uninit.aux);
+		page->uninit.aux = NULL;
+	}
+	
+}
+
+bool 
+uninit_aux_load_copy(struct supplemental_page_table *dst, struct page *src_page) {
+	struct file				*current_file_copy = NULL;
+	struct uninit_aux		*aux = NULL;
+
+
+	current_file_copy = thread_current()->current_file;
+
+	aux = (struct uninit_aux *)calloc(1, sizeof(struct uninit_aux));
+	if (!aux) return false;
+
+	memcpy(aux, src_page->uninit.aux, sizeof(struct uninit_aux));
+	aux->aux_load.elf_file = current_file_copy;
+
+	if (!vm_alloc_page_with_initializer(
+		src_page->uninit.type, src_page->va, src_page->writable,
+		src_page->uninit.init, aux
+	)) return false;
+
+	return true;
+}
+
+bool 
+uninit_aux_file_copy(struct supplemental_page_table *dst, struct page *src_page) {
+	return true;
+}
+
+bool 
+uninit_aux_anon_copy(struct supplemental_page_table *dst, struct page *src_page) {
+	struct page	*dst_page;
+
+	if (!vm_alloc_page_with_initializer(src_page->uninit.type, src_page->va, src_page->writable, src_page->uninit.init, src_page->uninit.aux))
+		return false;
+
+	return true;
+}
+
+bool  uninit_copy(struct supplemental_page_table *dst, struct page *src_page) {
+	enum uninit_aux_type	aux_type;
+
+	if (!dst || !src_page) return false;  
+
+	aux_type = ((struct uninit_aux *)(src_page->uninit.aux))->type;
+
+	switch (aux_type)
+	{
+		case UNINIT_AUX_LOAD:
+			if (false == uninit_aux_load_copy(dst, src_page)) return false;
+			break ;
+		case UNINIT_AUX_FILE:
+			if (false == uninit_aux_file_copy(dst, src_page)) return false;
+			break ;
+		case UNINIT_AUX_ANON:
+			if (false == uninit_aux_anon_copy(dst, src_page)) return false;
+			break ;	
+	}
+
+	return true;
 }

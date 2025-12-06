@@ -1,6 +1,7 @@
 /* anon.c: Implementation of page for non-disk image (a.k.a. anonymous page). */
 
 #include "vm/vm.h"
+#include "threads/vaddr.h"
 #include "devices/disk.h"
 
 /* DO NOT MODIFY BELOW LINE */
@@ -38,6 +39,7 @@ anon_initializer (struct page *page, enum vm_type type, void *kva) {
 static bool
 anon_swap_in (struct page *page, void *kva) {
 	struct anon_page *anon_page = &page->anon;
+	return true;
 }
 
 /* Swap out the page by writing contents to the swap disk. */
@@ -50,4 +52,23 @@ anon_swap_out (struct page *page) {
 static void
 anon_destroy (struct page *page) {
 	struct anon_page *anon_page = &page->anon;
+}
+
+
+bool
+anon_copy(struct supplemental_page_table *dst, struct page *src_page) {
+	struct page	*dst_page = NULL;
+	
+	vm_alloc_page(src_page->operations->type, src_page->va, src_page->writable);
+
+	dst_page = spt_find_page(dst, src_page->va);
+	if (!dst_page)
+		return false;
+
+	if (src_page->frame)
+	{
+		vm_claim_page(dst_page->va);
+		memcpy(dst_page->frame->kva, src_page->frame->kva, PGSIZE);
+	}
+	return true;
 }

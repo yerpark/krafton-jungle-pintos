@@ -9,5 +9,6 @@ struct anon_page {
 
 void vm_anon_init (void);
 bool anon_initializer (struct page *page, enum vm_type type, void *kva);
+bool anon_copy(struct supplemental_page_table *dst, struct page *src_page);
 
 #endif
