@@ -82,7 +82,7 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		return true;
 	}
 err:
-	if(!page) free(page);
+	if(page) free(page);
 	return false;
 }
 
@@ -255,24 +255,6 @@ supplemental_page_table_init (struct supplemental_page_table *spt) {
 		PANIC("spt initialize failed");
 }
 
-bool
-anon_copy(struct supplemental_page_table *dst, struct page *src_page) {
-	struct page	*dst_page = NULL;
-	
-	vm_alloc_page(src_page->operations->type, src_page->va, src_page->writable);
-
-	dst_page = spt_find_page(dst, src_page->va);
-	if (!dst_page)
-		return false;
-
-	if (src_page->frame)
-	{
-		vm_do_claim_page(dst_page);
-		memcpy(dst_page->frame->kva, src_page->frame->kva, PGSIZE);
-	}
-	return true;
-}
-
 /* Copy supplemental page table from src to dst */
 bool
 supplemental_page_table_copy (struct supplemental_page_table *dst,
@@ -337,6 +319,5 @@ page_destroy(struct hash_elem *e, void *aux UNUSED) {
 	if (!e) return ;
 
 	cur = hash_entry(e, struct page, hs_elem);
-	destroy(cur);
-	free (cur);
+	vm_dealloc_page(cur);
 }

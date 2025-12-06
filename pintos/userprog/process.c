@@ -165,8 +165,7 @@ static void __do_fork(void* aux) {
     if (parent->current_file)
     {
         thread_current()->current_file = file_duplicate(parent->current_file);
-        if (!(thread_current()->current_file))
-            PANIC("current file duplicate failed\n");
+        ASSERT (thread_current()->current_file);
     }
 #ifdef VM
     supplemental_page_table_init(&current->spt);
@@ -742,7 +741,7 @@ static bool setup_stack(struct intr_frame* if_) {
 
     if(!success){
         page = spt_find_page(&cur->spt, stack_bottom);
-        if(!page) spt_remove_page(&cur->spt, page);
+        if(page) spt_remove_page(&cur->spt, page);
     }
 
     return success;

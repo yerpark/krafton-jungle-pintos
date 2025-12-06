@@ -72,9 +72,6 @@ uninit_destroy (struct page *page) {
 
 	if (page->uninit.aux)
 	{
-		// 만약에 uninit 여러개의 타입이 있으면 ? 
-			// 오직 uninit page를 위해 file을 열어준 경우 등..
-			// 위와 같은 경우에는 file_close 등 따로 해야하지 않을까
 		free (page->uninit.aux);
 		page->uninit.aux = NULL;
 	}
@@ -88,8 +85,6 @@ uninit_aux_load_copy(struct supplemental_page_table *dst, struct page *src_page)
 
 
 	current_file_copy = thread_current()->current_file;
-	if (!current_file_copy)
-		printf("no current file\n");
 
 	aux = (struct uninit_aux *)calloc(1, sizeof(struct uninit_aux));
 	if (!aux) return false;

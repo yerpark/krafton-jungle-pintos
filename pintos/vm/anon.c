@@ -1,6 +1,7 @@
 /* anon.c: Implementation of page for non-disk image (a.k.a. anonymous page). */
 
 #include "vm/vm.h"
+#include "threads/vaddr.h"
 #include "devices/disk.h"
 
 /* DO NOT MODIFY BELOW LINE */
@@ -51,16 +52,23 @@ anon_swap_out (struct page *page) {
 static void
 anon_destroy (struct page *page) {
 	struct anon_page *anon_page = &page->anon;
-
-	// 물리 프레임을 할당 받은 경우에 해당 물리 메모리 해제 
-	if (page->frame)
-	{
-		// frame table을 만들면 다른 page가 참조중인지 확인 . .
-			// 그래서 완전히 해제하지 않게 해야할듯?
-			// file ref count처럼 ref count가 1일때 palloc_free_page되게?
-		// palloc_free_page(page->frame->kva);
-	}
-	
-	// swap 영역에 있는 경우 핸들 
 }
 
+
+bool
+anon_copy(struct supplemental_page_table *dst, struct page *src_page) {
+	struct page	*dst_page = NULL;
+	
+	vm_alloc_page(src_page->operations->type, src_page->va, src_page->writable);
+
+	dst_page = spt_find_page(dst, src_page->va);
+	if (!dst_page)
+		return false;
+
+	if (src_page->frame)
+	{
+		vm_claim_page(dst_page->va);
+		memcpy(dst_page->frame->kva, src_page->frame->kva, PGSIZE);
+	}
+	return true;
+}
