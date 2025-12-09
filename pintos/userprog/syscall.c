@@ -284,5 +284,6 @@ static void *syscall_mmap(void *addr, size_t length, int writable, int fd, off_t
 }
 
 static void syscall_munmap (void *addr){
+    do_munmap(addr);
     return;
 }

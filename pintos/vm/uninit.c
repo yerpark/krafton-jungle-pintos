@@ -66,12 +66,10 @@ uninit_initialize (struct page *page, void *kva) {
 static void
 uninit_destroy (struct page *page) {
 	struct uninit_page *uninit = &page->uninit;
-	/* TODO: Fill this function.
-	 * TODO: If you don't have anything to do, just return. */
-	/* TODO : lazy_loading 안했으면 aux 제거하기 */
 
 	if (page->uninit.aux)
-	{
+	{	
+		/* TODO: 누수 가능성 (로드 안된 mmap 파일)*/
 		free (page->uninit.aux);
 		page->uninit.aux = NULL;
 	}

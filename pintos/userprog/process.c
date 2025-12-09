@@ -412,7 +412,7 @@ static bool load(const char* file_name, int argc, char** argv, struct intr_frame
     file_ofs = ehdr.e_phoff;
     for (i = 0; i < ehdr.e_phnum; i++) {
         struct Phdr phdr;
-
+        
         if (file_ofs < 0 || file_ofs > file_length(file)) goto done;
         file_seek(file, file_ofs);
 
