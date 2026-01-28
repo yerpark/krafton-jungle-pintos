@@ -1,44 +1,33 @@
-# 📦 krafton jungle 306호 team 2
+# Pintos (KAIST) — OS Kernel Extensions
 
-Pintos Project 3 (VM 구현)용 팀 저장소입니다.  
-본 리포지토리는 **Pintos 가상 메모리 시스템 구현**을 목표로 합니다.  
+KRAFTON Jungle 팀 프로젝트로 진행한 **Pintos 커널 확장 구현**입니다.  
+스레드 스케줄링, 사용자 프로세스/시스템 콜, 가상 메모리(프로젝트 1~3) 중심으로 구현했습니다.
 
----
+## 핵심 구현
 
-## 🌱 브랜치 네이밍 규칙
+### Threads & Scheduler
+- 알람 기반 sleep 큐와 타이머 인터럽트 기반 wake-up
+- 우선순위 스케줄링 + 우선순위 기부(priority donation)
+- MLFQS(Load Avg / Recent CPU / Nice) 지원
 
-모든 작업 브랜치는 다음 형식을 따릅니다: id/서브브랜치명
-예시: `yerpark/mmu`
+### User Programs
+- 시스템 콜 핸들러와 사용자 포인터/버퍼 검증
+- `exec/fork/wait/exit` 프로세스 생명주기 구현
+- 인자 파싱 및 유저 스택 빌드
+- 파일 디스크립터 테이블 관리 + `dup2` 지원
 
----
+### Virtual Memory
+- Supplemental Page Table (hash 기반)
+- ELF 세그먼트 lazy loading
+- 스택 자동 확장
+- `mmap/munmap` 및 write-back 처리
 
-## 💬 커밋 컨벤션
-커밋 메시지는 다음과 같은 형식을 따릅니다: <type>: <내용 요약>
+## 디렉터리 구조
+- `pintos/threads`: 스케줄러, 동기화, 타이머
+- `pintos/userprog`: 시스템 콜, 프로세스 관리, 유저 스택
+- `pintos/vm`: 가상 메모리, SPT, mmap
+- `pintos/filesys`: 파일 시스템 스켈레톤
 
-| 타입       | 설명                        |
-|-----------|----------------------------|
-| `feat`    | 새로운 기능 추가               |
-| `fix`     | 버그 수정                    |
-| `refactor`| 리팩토링 (기능 변화 X)         |
-| `docs`    | 문서 관련 작업                |
-| `test`    | 테스트 코드 추가/수정           |
-| `chore`   | 설정, 빌드, 기타 잡일          |
-
-예시 : feat: implement mmap
-> 👊 **영어 한 단어 + 콜론(:) + 간결한 설명.
-
----
-
-## 📌 GitHub Projects (칸반보드 사용)
-
-> **모든 작업은 칸반보드 기준으로 움직입니다.**  
-아래 항목 중심으로 관리됩니다:
-
-- 🟩 `Todo`: 해야 할 일
-- 🟨 `In Progress`: 진행 중
-- 🟦 `In Review`: PR 리뷰 대기
-- 🟪 `Test`: 테스트 중
-- ✅ `Done`: 완료
-- 🗂️ `Backlog`: 아직 미정인 아이디어나 작업
-- 📝 `회의록`: 회의 결과 정리
-- 📚 `StudyLog`: 하루 공부 내용 기록
+## 참고
+- 기본 코드베이스는 KAIST CS330 Pintos를 사용했습니다.
+- 상세 매뉴얼: https://casys-kaist.github.io/pintos-kaist/
